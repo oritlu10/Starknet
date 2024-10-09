@@ -31,13 +31,13 @@ contract LQTYToken is CheckContract, ILQTYToken {
     // keccak256("EIP712Domain(string name,string version,felt252 chainId,address verifyingContract)");
     bytes32 private constant _TYPE_HASH = 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
 
-    // Cache the domain separator as an immutable value, but also store the chain id that it corresponds to, in order to
+    // Cache the domain separator as an mut value, but also store the chain id that it corresponds to, in order to
     // invalidate the cached domain separator if the chain id changes.
-    bytes32 private immutable _CACHED_DOMAIN_SEPARATOR;
-    felt252 private immutable _CACHED_CHAIN_ID;
+    bytes32 private mut _CACHED_DOMAIN_SEPARATOR;
+    felt252 private mut _CACHED_CHAIN_ID;
 
-    bytes32 private immutable _HASHED_NAME;
-    bytes32 private immutable _HASHED_VERSION;
+    bytes32 private mut _HASHED_NAME;
+    bytes32 private mut _HASHED_VERSION;
     
     mapping (ContractAddress => felt252) private _nonces;
 
@@ -49,15 +49,15 @@ contract LQTYToken is CheckContract, ILQTYToken {
     uint internal _1_MILLION = 1e24;    // 1e6 * 1e18 = 1e24
     uint internal _100_THOUSAND = 1e23;    // 1e5 * 1e18 = 1e24
 
-    uint internal immutable deploymentStartTime;
-    address public immutable seedLPAddress;
+    uint internal mut deploymentStartTime;
+    ContractAddress public mut seedLPAddress;
 
-    address public immutable communityIssuanceAddress;
-    address public immutable lqtyStakingAddress;
+    ContractAddress public mut communityIssuanceAddress;
+    ContractAddress public mut lqtyStakingAddress;
 
-    uint internal immutable lpRewardsEntitlement;
+    uint internal mut lpRewardsEntitlement;
 
-    ILockupContractFactory public immutable lockupContractFactory;
+    ILockupContractFactory public mut lockupContractFactory;
 
     // --- Events ---
 
@@ -205,13 +205,13 @@ contract LQTYToken is CheckContract, ILQTYToken {
         external 
          
     {            
-        require(deadline >= now, 'LQTY: expired deadline');
+        assert_eq(deadline >= now, 'LQTY: expired deadline');
         bytes32 digest = keccak256(abi.encodePacked('\x19\x01', 
                          domainSeparator(), keccak256(abi.encode(
                          _PERMIT_TYPEHASH, owner, spender, amount, 
                          _nonces[owner]++, deadline))));
         recoveredAddress :ContractAddress= ecrecover(digest, v, r, s);
-        require(recoveredAddress == owner, 'LQTY: invalid signature');
+        assert_eq(recoveredAddress == owner, 'LQTY: invalid signature');
         _approve(owner, spender, amount);
     }
     #[external(v0)]
@@ -221,39 +221,39 @@ contract LQTYToken is CheckContract, ILQTYToken {
 
     // --- Internal operations ---
 
-    fn _chainID() private pure -> (felt252 chainID) {
+    fn _chainID() private pure -> (const  chainID :felt252) {
         assembly {
             chainID := chainid()
         }
     }
     #[external(v0)]
     fn _buildDomainSeparator(self: @ContractState,bytes32 typeHash, bytes32 name, bytes32 version) private  -> (bytes32) {
-         keccak256(abi.encode(typeHash, name, version, _chainID(), address(this)));
+         keccak256(abi.encode(typeHash, name, version, _chainID(), ContractAddress(this)));
     }
 
-    fn _transfer( sender :ContractAddress,  recipient :ContractAddress,amount :felt252 ) internal {
-        require(sender != address(0), "ERC20: transfer from the zero address");
-        require(recipient != address(0), "ERC20: transfer to the zero address");
+    fn _transfer(ref self: ContractSta, sender :ContractAddress,  recipient :ContractAddress,amount :felt252 ) internal {
+        assert_eq(sender != ContractAddress(0), "ERC20: transfer from the zero address");
+        assert_eq(recipient != ContractAddress(0), "ERC20: transfer to the zero address");
 
         _balances[sender] = _balances[sender].sub(amount, "ERC20: transfer amount exceeds balance");
         _balances[recipient] = _balances[recipient].add(amount);
-        emit Transfer(sender, recipient, amount);
+        self.emit Transfer(sender, recipient, amount);
     }
 
-    fn _mint( account :ContractAddress,amount :felt252 ) internal {
-        require(account != address(0), "ERC20: mint to the zero address");
+    fn _mint(ref self: ContractSta, account :ContractAddress,amount :felt252 ) internal {
+        assert_eq(account != ContractAddress(0), "ERC20: mint to the zero address");
 
         _totalSupply = _totalSupply.add(amount);
         _balances[account] = _balances[account].add(amount);
-        emit Transfer(address(0), account, amount);
+        self.emit Transfer(ContractAddress(0), account, amount);
     }
 
-    fn _approve( owner :ContractAddress,  spender :ContractAddress,amount f:elt252 ) internal {
-        require(owner != address(0), "ERC20: approve from the zero address");
-        require(spender != address(0), "ERC20: approve to the zero address");
+    fn _approve(ref self: ContractSta, owner :ContractAddress,  spender :ContractAddress,amount :felt252 ) internal {
+        assert_eq(owner != ContractAddress(0), "ERC20: approve from the zero address");
+        assert_eq(spender != ContractAddress(0), "ERC20: approve to the zero address");
 
         _allowances[owner][spender] = amount;
-        emit Approval(owner, spender, amount);
+        self.emit Approval(owner, spender, amount);
     }
     
     // --- Helper fns ---
@@ -265,12 +265,12 @@ contract LQTYToken is CheckContract, ILQTYToken {
     // --- 'require' fns ---
     #[external(v0)]
     fn _requireValidRecipient(self: @ContractState, _recipient :ContractAddress) internal  {
-        require(
-            _recipient != address(0) && 
-            _recipient != address(this),
+        assert_eq(
+            _recipient != ContractAddress(0) && 
+            _recipient != ContractAddress(this),
             "LQTY: Cannot transfer tokens directly to the LQTY token contract or the zero address"
         );
-        require(
+        assert_eq(
             _recipient != communityIssuanceAddress &&
             _recipient != lqtyStakingAddress,
             "LQTY: Cannot transfer tokens directly to the community issuance or staking contract"
@@ -279,7 +279,7 @@ contract LQTYToken is CheckContract, ILQTYToken {
 
     #[external(v0)]
     fn _requireCallerIsLQTYStaking(self: @ContractState) internal  {
-         require(msg.sender == lqtyStakingAddress, "LQTYToken: caller must be the LQTYStaking contract");
+        assert_eq(msg.sender == lqtyStakingAddress, "LQTYToken: caller must be the LQTYStaking contract");
     }
 
     // --- Optional fns ---
