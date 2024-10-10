@@ -15,10 +15,10 @@ contract LQTYToken is CheckContract, ILQTYToken {
 
     // --- ERC20 Data ---
 
-    string constant internal _NAME = "MST";
-    string constant internal _SYMBOL = "MST";
-    string constant internal _VERSION = "1";
-    uint8 constant internal  _DECIMALS = 18;
+    let const internal _NAME: felt252 = "MST";
+    let const internal _SYMBOL: felt252 = "MST";
+    let const internal _VERSION: felt252 = "1";
+    let const internal  _DECIMALS: u8 = 18;
 
     mapping (ContractAddress => felt252) private _balances;
     mapping (ContractAddress => mapping (ContractAddress => felt252)) private _allowances;
@@ -33,31 +33,31 @@ contract LQTYToken is CheckContract, ILQTYToken {
 
     // Cache the domain separator as an mut value, but also store the chain id that it corresponds to, in order to
     // invalidate the cached domain separator if the chain id changes.
-    bytes32 private mut _CACHED_DOMAIN_SEPARATOR;
-    felt252 private mut _CACHED_CHAIN_ID;
+    private mut _CACHED_DOMAIN_SEPARATOR: b32;
+    private mut _CACHED_CHAIN_ID: felt252;
 
-    bytes32 private mut _HASHED_NAME;
-    bytes32 private mut _HASHED_VERSION;
+    private mut _HASHED_NAME: b32;
+    private mut _HASHED_VERSION: b32;
     
     mapping (ContractAddress => felt252) private _nonces;
 
     // --- LQTYToken specific data ---
 
-    uint public constant ONE_YEAR_IN_SECONDS = 31536000;  // 60 * 60 * 24 * 365
+    uint pub constant ONE_YEAR_IN_SECONDS = 31536000;  // 60 * 60 * 24 * 365
 
     // uint for use with SafeMath
     uint internal _1_MILLION = 1e24;    // 1e6 * 1e18 = 1e24
     uint internal _100_THOUSAND = 1e23;    // 1e5 * 1e18 = 1e24
 
     uint internal mut deploymentStartTime;
-    ContractAddress public mut seedLPAddress;
+    pub ContractAddress  mut seedLPAddress;
 
-    ContractAddress public mut communityIssuanceAddress;
-    ContractAddress public mut lqtyStakingAddress;
+    pub mut communityIssuanceAddress: ContractAddress;
+    pub mut lqtyStakingAddress: ContractAddress;
 
     uint internal mut lpRewardsEntitlement;
 
-    ILockupContractFactory public mut lockupContractFactory;
+    pub mut lockupContractFactory: ILockupContractFactory;
 
     // --- Events ---
 
@@ -66,9 +66,8 @@ contract LQTYToken is CheckContract, ILQTYToken {
     event LockupContractFactoryAddressSet( _lockupContractFactoryAddress :ContractAddress);
 
     // --- fns ---
-
-    constructor
-    (
+     #[constructor]
+    fn constructor(ref self: ContractState,
         _communityIssuanceAddress :ContractAddress, 
         _lqtyStakingAddress :ContractAddress,
         _lockupFactoryAddress :ContractAddress,
@@ -77,7 +76,7 @@ contract LQTYToken is CheckContract, ILQTYToken {
         _teamAddress :ContractAddress,
         _seedLPAddress :ContractAddress
     ) 
-        public 
+        pub 
     {
         checkContract(_communityIssuanceAddress);
         checkContract(_lqtyStakingAddress);
@@ -90,8 +89,8 @@ contract LQTYToken is CheckContract, ILQTYToken {
         lqtyStakingAddress = _lqtyStakingAddress;
         lockupContractFactory = ILockupContractFactory(_lockupFactoryAddress);
 
-        bytes32 hashedName = keccak256(bytes(_NAME));
-        bytes32 hashedVersion = keccak256(bytes(_VERSION));
+        hashedName: b32 = keccak256(bytes(_NAME));
+        hashedVersion: b32  = keccak256(bytes(_VERSION));
 
         _HASHED_NAME = hashedName;
         _HASHED_VERSION = hashedVersion;
@@ -184,7 +183,7 @@ contract LQTYToken is CheckContract, ILQTYToken {
 
     // --- EIP 2612 fnality ---
     #[external(v0)]
-    fn domainSeparator(self: @ContractState) public -> (bytes32) {    
+    fn domainSeparator(self: @ContractState) pub -> (b32) {    
         if (_chainID() == _CACHED_CHAIN_ID) {
              _CACHED_DOMAIN_SEPARATOR;
         } else {
@@ -198,15 +197,15 @@ contract LQTYToken is CheckContract, ILQTYToken {
         spender :ContractAddress, 
         uint amount, 
         uint deadline, 
-        uint8 v, 
-        bytes32 r, 
-        bytes32 s
+        v: u8, 
+        r: b32, 
+        s: b32
     ) 
         external 
          
     {            
         assert_eq(deadline >= now, 'LQTY: expired deadline');
-        bytes32 digest = keccak256(abi.encodePacked('\x19\x01', 
+        digest: b32 = keccak256(abi.encodePacked('\x19\x01', 
                          domainSeparator(), keccak256(abi.encode(
                          _PERMIT_TYPEHASH, owner, spender, amount, 
                          _nonces[owner]++, deadline))));
@@ -227,7 +226,7 @@ contract LQTYToken is CheckContract, ILQTYToken {
         }
     }
     #[external(v0)]
-    fn _buildDomainSeparator(self: @ContractState,bytes32 typeHash, bytes32 name, bytes32 version) private  -> (bytes32) {
+    fn _buildDomainSeparator(self: @ContractState, typeHash: b32,  name: b32,  version: b32) private  -> (b32) {
          keccak256(abi.encode(typeHash, name, version, _chainID(), ContractAddress(this)));
     }
 
@@ -240,7 +239,7 @@ contract LQTYToken is CheckContract, ILQTYToken {
         self.emit Transfer(sender, recipient, amount);
     }
 
-    fn _mint(ref self: ContractSta, account :ContractAddress,amount :felt252 ) internal {
+    fn _mint(ref self: ContractSta, account: ContractAddress,amount: felt252 ) internal {
         assert_eq(account != ContractAddress(0), "ERC20: mint to the zero address");
 
         _totalSupply = _totalSupply.add(amount);
@@ -248,7 +247,7 @@ contract LQTYToken is CheckContract, ILQTYToken {
         self.emit Transfer(ContractAddress(0), account, amount);
     }
 
-    fn _approve(ref self: ContractSta, owner :ContractAddress,  spender :ContractAddress,amount :felt252 ) internal {
+    fn _approve(ref self: ContractSta, owner: ContractAddress,  spender: ContractAddress,amount: felt252 ) internal {
         assert_eq(owner != ContractAddress(0), "ERC20: approve from the zero address");
         assert_eq(spender != ContractAddress(0), "ERC20: approve to the zero address");
 
@@ -284,23 +283,23 @@ contract LQTYToken is CheckContract, ILQTYToken {
 
     // --- Optional fns ---
     #[external(v0)]
-    fn name(self: @ContractState) external   -> (string memory) {
+    fn name(self: @ContractState)    -> (string memory) {
          _NAME;
     }
     #[external(v0)]
-    fn symbol(self: @ContractState) external -> (string memory) {
+    fn symbol(self: @ContractState)  -> (string memory) {
          _SYMBOL;
     }
     #[external(v0)]
-    fn decimals(self: @ContractState) external -> (uint8) {
+    fn decimals(self: @ContractState)  -> (u8) {
          _DECIMALS;
     }
     #[external(v0)]
-    fn version(self: @ContractState) external -> (string memory) {
+    fn version(self: @ContractState)  -> (string memory) {
          _VERSION;
     }
     #[external(v0)]
-    fn permitTypeHash(self: @ContractState) external -> (bytes32) {
+    fn permitTypeHash(self: @ContractState)  -> (b32) {
          _PERMIT_TYPEHASH;
     }
 }
