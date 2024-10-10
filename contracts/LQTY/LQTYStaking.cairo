@@ -195,7 +195,7 @@ contract LQTYStaking is ILQTYStaking, Ownable, CheckContract, BaseMath {
     fn _getPendingETHGain(self: @ContractState, _user: ContractAddress) internal  -> (uint) {
         uint F_ETH_Snapshot = snapshots[_user].F_ETH_Snapshot;
         uint ETHGain = stakes[_user].mul(F_ETH.sub(F_ETH_Snapshot)).div(DECIMAL_PRECISION);
-        return ETHGain;
+         ETHGain;
     }
 
     #[external(v0)]
