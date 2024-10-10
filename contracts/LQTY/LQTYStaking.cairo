@@ -226,23 +226,23 @@ contract LQTYStaking is ILQTYStaking, Ownable, CheckContract, BaseMath {
     // --- 'require' fns ---
 
     fn _requireCallerIsTroveManager(self: @ContractState) internal  {
-        require(msg.sender == troveManagerAddress, "LQTYStaking: caller is not TroveM");
+        assert_eq(msg.sender == troveManagerAddress, "LQTYStaking: caller is not TroveM");
     }
 
     fn _requireCallerIsBorrowerOperations(self: @ContractState) internal  {
-        require(msg.sender == borrowerOperationsAddress, "LQTYStaking: caller is not BorrowerOps");
+        assert_eq(msg.sender == borrowerOperationsAddress, "LQTYStaking: caller is not BorrowerOps");
     }
     
     fn _requireCallerIsActivePool(self: @ContractState) internal  {
-        require(msg.sender == activePoolAddress, "LQTYStaking: caller is not ActivePool");
+        assert_eq(msg.sender == activePoolAddress, "LQTYStaking: caller is not ActivePool");
     }
 
     fn _requireUserHasStake(const uint currentStake) internal  {  
-        require(currentStake > 0, 'LQTYStaking: User must have a non-zero stake');  
+        assert_eq(currentStake > 0, 'LQTYStaking: User must have a non-zero stake');  
     }
 
     fn _requireNonZeroAmount(const uint _amount) internal  {
-        require(_amount > 0, 'LQTYStaking: Amount must be non-zero');
+        assert_eq(_amount > 0, 'LQTYStaking: Amount must be non-zero');
     }
      #[external(v0)]
     receive()  payable {
